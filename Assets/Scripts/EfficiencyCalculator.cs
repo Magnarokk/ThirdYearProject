@@ -17,10 +17,7 @@ public class EfficiencyCalculator : MonoBehaviour {
 	private float totalPowerOut = 0;
 
 	//in watts
-	private float power = 0; //unused
-
-	//in amps
-	private List<float> sectionCurrent; //unused
+	private float power = 0;
 
 	//in watts
 	private List<float> sectionPower; //unused
