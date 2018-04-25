@@ -5,6 +5,17 @@ using UnityEngine.UI;
 
 public class EfficiencyCalculator : MonoBehaviour
 {
+    [SerializeField]
+    private Text pOut;
+    [SerializeField]
+    private Text pIn;
+    [SerializeField]
+    private Text pEff;
+
+    [SerializeField]
+    private Toggle graphView;
+    [SerializeField]
+    private Camera camera;
 
     private int pvDDVal = 0;
     private int lsDDVal = 0;
@@ -64,14 +75,6 @@ public class EfficiencyCalculator : MonoBehaviour
 		0.000f, 0.500f, 4.725f, 3.750f, 5.075f, 9.425f, 5.750f, 1.250f, 0.500f, 0.250f
     };
 
-    //corrective ratio to adjust average power input of each light source to that of AM1.5
-    private float blackBodyCorrectiveRatio = 0;
-    private float warmLEDCorrectiveRatio = 0;
-    private float coolLEDCorrectiveRatio = 0;
-    private float broadBandFluoCorrectiveRatio = 0;
-    private float narrowTriBandFluoCorrectiveRatio = 0;
-    private float coolWhiteFluoCorrectiveRatio = 0;
-
 
 
     /* PHOTOVOLTAIC CELL EXTERNAL QUANTUM EFFICIENCIES AND SIGNIFICANT VALUES */
@@ -93,27 +96,6 @@ public class EfficiencyCalculator : MonoBehaviour
     private float[] fhgIseWaferMidEQE = { }; //300nm to
     private float[] fhgIseWaferBotEQE = { }; //300nm to
     private float[] fhgIseWaferEQE = new float[0]; //300nm to
-
-    //actual efficiency for AM1.5
-    private float solexelEff = 0.212f;
-    private float firstSolarEff = 0.210f;
-    private float fujikuraEff = 0.100f;
-    private float amorphAISTEff = 0.102f;
-    private float fhgIseConcentrEff = 0.352f;
-
-    //surface area of cell in meters squared (m^2) ==> WILL BE VARIABLE WITH SLIDER
-    private float solexelArea = 0.02397f;
-    private float firstSolarArea = 0.00010623f;
-    private float fujikuraArea = 0.002419f;
-    private float amorphAISTArea = 1.001e-4f;
-    private float fhgIseConcentrArea = 0.0002f; //COULDN'T FIND ACTUAL VALUE, PLACEHOLDER.
-
-    //corrective ratio to adjust average EQE efficiency to actual efficiency of cell, for AM1.5 from 300nm to 2500nm
-    private float solexelCorrectiveRatio = 0.28f;
-    private float firstSolarCorrectiveRatio = 0.355f;
-    private float fujikuraCorrectiveRatio = 0.1995f;
-    private float amorphAISTCorrectiveRatio = 0.2403f;
-    private float fhgIseConcentrCorrectiveRatio = 0.5485f;
 
     //create List containing PVCell objects and light source objects, and all their properties
     public List<PVCellData> PVCells;
@@ -227,11 +209,17 @@ public class EfficiencyCalculator : MonoBehaviour
         selectedPVCell = solexel;
         selectedLightSource = AM1p5;
         UpdateCalculator(selectedLightSource, selectedPVCell);
+        UpdateGraph(selectedLightSource, selectedPVCell);
 
     }
 
     void Update()
     {
+        Transform cameraTrans = camera.GetComponent<Transform>();
+        if (graphView.isOn && cameraTrans.position.x > -13.5f)
+            cameraTrans.position = new Vector3(-13.5f, 1, -10);
+        else if (!graphView.isOn && cameraTrans.position.x < 0)
+            cameraTrans.position = new Vector3(0, 1, -10);
 
         /* ON DROPDOWN CHANGE */
 
@@ -259,6 +247,7 @@ public class EfficiencyCalculator : MonoBehaviour
             }
             Debug.Log(selectedPVCell.name + " selected. Updating.");
             UpdateCalculator(selectedLightSource, selectedPVCell);
+            UpdateGraph(selectedLightSource, selectedPVCell);
 
         }
 
@@ -321,11 +310,18 @@ public class EfficiencyCalculator : MonoBehaviour
                 totalPowerOut += ls.spectralIrradiance[i] * wavelengthDelta * pv.surfaceArea * pv.EQE[i] * pv.correctiveRatio; //add power out from interval to total power out
         }
 
+        pOut.text = ("Power Out:\n" + totalPowerOut + " Watts");
+        pIn.text = ("Power In:\n" + totalPowerIn + " Watts");
+        pEff.text = ("Efficiency:\n" + (100 * totalPowerOut / totalPowerIn) + "%");
+
         Debug.Log("Total Power OUT = " + totalPowerOut);
         Debug.Log("Total Power IN  = " + totalPowerIn);
         Debug.Log("Efficiency = " + (100 * totalPowerOut / totalPowerIn) + "%");
     }
 
+    void UpdateGraph(LightSourceData ls, PVCellData pv) {
+
+    }
 
 }
 

@@ -11,6 +11,16 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: Triband Fluo
   m_EditorClassIdentifier: Assembly-CSharp::LightSourceData
-  name: Narrow Tri-Band Fluorescent
+  name: Tri-Band Fluo
   correctiveRatio: 0
-  spectralIrradiance: []
+  spectralIrradiance:
+  - 0
+  - 0.25
+  - 4.07
+  - 3.9
+  - 7.1
+  - 5.25
+  - 8.7
+  - 1
+  - 1
+  - 0.25

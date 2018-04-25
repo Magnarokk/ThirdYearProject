@@ -16,10 +16,10 @@ MonoImporter:
   - solexel: {instanceID: 0}
   - firstSolar: {instanceID: 0}
   - fujikura: {instanceID: 0}
-  - amorphAIST: {fileID: 11400000, guid: 82bab4ae7e84d4af4b473d6174ae0861, type: 2}
+  - amorphAIST: {instanceID: 0}
   - fhgIseConcentr: {instanceID: 0}
-  - PVCellDropdown: {instanceID: 0}
-  - LightSourceDropdown: {instanceID: 0}
+  - pvCellDropdown: {instanceID: 0}
+  - lightSourceDropdown: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
