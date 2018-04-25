@@ -5,10 +5,15 @@ using UnityEngine.UI;
 
 public class EfficiencyCalculator : MonoBehaviour {
 
-	//wavelength averages range from 325nm to 1175nm with 50nm increments
+    private int pvDDVal = 0;
+    private int lsDDVal = 0;
+    private PVCellData selectedPVCell;
+    private LightSourceData selectedLightSource;
 
-	//step between all measured values in nanometers, used to calculate Input Power Density from Spectral Irradiance
-	private int wavelengthDelta = 50;
+    //wavelength averages range from 325nm to 1175nm with 50nm increments
+
+    //step between all measured values in nanometers, used to calculate Input Power Density from Spectral Irradiance
+    private int wavelengthDelta = 50;
 
 	//in watts
 	private float totalPowerIn = 0;
@@ -130,10 +135,16 @@ public class EfficiencyCalculator : MonoBehaviour {
 	public PVCellData fhgIseConcentr;
 
 	//initializing the references to the dropdown menus
-	public Dropdown PVCellDropdown;
-	public Dropdown LightSourceDropdown;
+	public Dropdown pvCellDropdown;
+	public Dropdown lightSourceDropdown;
 
 	void Start () {
+
+        /* FETCHING DROPDOWNS */
+        pvCellDropdown = GameObject.Find("PV Cells Dropdown").GetComponent<Dropdown>();
+        lightSourceDropdown = GameObject.Find("Light Sources Dropdown").GetComponent<Dropdown>();
+
+
 
 		/* ADDING PV CELL AND LIGHT SOURCE DATA TO LIST */
 
@@ -164,8 +175,10 @@ public class EfficiencyCalculator : MonoBehaviour {
 			LightSourceNames.Add (ls.name);
 		}
 
-		PVCellDropdown.AddOptions (PVCellNames);
-		LightSourceDropdown.AddOptions (LightSourceNames);
+		pvCellDropdown.AddOptions (PVCellNames);
+		lightSourceDropdown.AddOptions (LightSourceNames);
+
+
 
 		/* ASSIGNING SPECTRAL IRRADIANCE VALUES */
 
@@ -204,35 +217,106 @@ public class EfficiencyCalculator : MonoBehaviour {
 
 
 
-		/* CALCULATION OF SPLIT EFFICIENCIES */
+        /* UPDATING CALCULATOR FOR FIRST TIME */
 
-		for (int i = 0; i < AM1p5SI.Length; i++) { //for every interval in the observed light source's SI
+        selectedPVCell = solexel;
+        selectedLightSource = AM1p5;
+        UpdateCalculator(selectedLightSource, selectedPVCell);
 
-			float wavelength = 325 + 50 * i; //the wavelength starts at 325nm and increments in steps of 50
+    }
 
-			totalPowerIn += AM1p5SI[i] * wavelengthDelta * amorphAISTArea; //add power in from interval to total power in
+    void Update () {
 
-		}
-		for (int i = 0; i < amorphAISTEQE.Length; i++) { //for every interval in the observed cell's EQE
+        /* ON DROPDOWN CHANGE */
 
-			float wavelength = 325 + 50 * i; //the wavelength starts at 325nm and increments in steps of 50
+        if (pvCellDropdown.value != pvDDVal) {
+            pvDDVal = pvCellDropdown.value;
 
-			float SIVal;
-			if (i >= AM1p5SI.Length) //sets Spectral Irradiation value to 0 if no value found at specified wavelength interval
-				SIVal = 0;
-			else
-				SIVal = AM1p5SI [i];
+            switch (pvCellDropdown.captionText.text)
+            {
+                case "Solexel":
+                    selectedPVCell = solexel;
+                    break;
+                case "First Solar":
+                    selectedPVCell = firstSolar;
+                    break;
+                case "Fujikura":
+                    selectedPVCell = fujikura;
+                    break;
+                case "AIST":
+                    selectedPVCell = amorphAIST;
+                    break;
+                case "FhG-ISE":
+                    selectedPVCell = fhgIseConcentr;
+                    break;
+            }
+            Debug.Log(selectedPVCell.name + " selected. Updating.");
+            UpdateCalculator(selectedLightSource, selectedPVCell);
+                
+        }
 
-			totalPowerOut += SIVal * wavelengthDelta * amorphAISTArea * amorphAISTEQE [i] * amorphAISTCorrectiveRatio; //add power out from interval to total power out
-		}
-			
-		Debug.Log("Total Power OUT = " + totalPowerOut);
-		Debug.Log("Total Power IN  = " + totalPowerIn);
-		Debug.Log ("Efficiency = " + (100 * totalPowerOut / totalPowerIn) + "%");
-	}
+        if (lightSourceDropdown.value != lsDDVal) {
+            lsDDVal = lightSourceDropdown.value;
 
-	void Update () {
-	}
+            switch (lightSourceDropdown.captionText.text)
+            {
+                case "AM 1.5":
+                    selectedLightSource = AM1p5;
+                    break;
+                case "Incandescent":
+                    selectedLightSource = blackBody;
+                    break;
+                case "Warm LED":
+                    selectedLightSource = warmLED;
+                    break;
+                case "Cool LED":
+                    selectedLightSource = coolLED;
+                    break;
+                case "Broadband":
+                    selectedLightSource = broadBandFluo;
+                    break;
+                case "Narrow Tri-Band":
+                    selectedLightSource = narrowTriBandFluo;
+                    break;
+                case "Cool White":
+                    selectedLightSource = coolWhiteFluo;
+                    break;
+            }
+            Debug.Log(selectedLightSource.name + " selected. Updating.");
+            UpdateCalculator(selectedLightSource, selectedPVCell);
+        }
+
+    }
+
+    void UpdateCalculator(LightSourceData ls, PVCellData pv) {
+        /* CALCULATION OF SPLIT EFFICIENCIES */
+
+        float wavelength;
+        totalPowerIn = 0;
+        totalPowerOut = 0;
+
+        for (int i = 0; i < ls.spectralIrradiance.Length; i++)
+        { //for every interval in the observed light source's Spectral Irradiance
+
+            wavelength = 325 + wavelengthDelta * i; //the wavelength starts at 325nm and increments in steps of 50
+
+            totalPowerIn += ls.spectralIrradiance[i] * wavelengthDelta * pv.surfaceArea; //add power in from interval to total power in
+
+        }
+        for (int i = 0; i < pv.EQE.Length; i++)
+        { //for every interval in the observed cell's External Quantum Efficiency
+
+            wavelength = 325 + wavelengthDelta * i; //the wavelength starts at 325nm and increments in steps of 50
+
+            if (i < ls.spectralIrradiance.Length) //sets Spectral Irradiation value to 0 if no value found at specified wavelength interval
+                totalPowerOut += ls.spectralIrradiance[i] * wavelengthDelta * pv.surfaceArea * pv.EQE[i] * pv.correctiveRatio; //add power out from interval to total power out
+        }
+
+        Debug.Log("Total Power OUT = " + totalPowerOut);
+        Debug.Log("Total Power IN  = " + totalPowerIn);
+        Debug.Log("Efficiency = " + (100 * totalPowerOut / totalPowerIn) + "%");
+    }
+
 
 }
 

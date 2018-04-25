@@ -5,7 +5,21 @@ licenseType: Free
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - AM1p5: {instanceID: 0}
+  - blackBody: {instanceID: 0}
+  - warmLED: {instanceID: 0}
+  - coolLED: {instanceID: 0}
+  - broadBandFluo: {instanceID: 0}
+  - narrowTriBandFluo: {instanceID: 0}
+  - coolWhiteFluo: {instanceID: 0}
+  - solexel: {instanceID: 0}
+  - firstSolar: {instanceID: 0}
+  - fujikura: {instanceID: 0}
+  - amorphAIST: {fileID: 11400000, guid: 82bab4ae7e84d4af4b473d6174ae0861, type: 2}
+  - fhgIseConcentr: {instanceID: 0}
+  - PVCellDropdown: {instanceID: 0}
+  - LightSourceDropdown: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
