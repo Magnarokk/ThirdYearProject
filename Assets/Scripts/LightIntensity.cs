@@ -12,12 +12,12 @@ public class LightIntensity : MonoBehaviour {
 	void Start () {
         slider = gameObject.GetComponent<Slider>();
         slider.normalizedValue = 0.7f;
-        multiplier = slider.value;
     }
 	
 	// Update is called once per frame
 	void Update () {
-		GameObject.Find("Lamp").GetComponent<Renderer>().material.color = new Color(multiplier+.1f, multiplier+.1f, multiplier+.1f);
+        multiplier = slider.value;
+        GameObject.Find("Lamp").GetComponent<Renderer>().material.color = new Color(multiplier+.1f, multiplier+.1f, multiplier+.1f);
 		GameObject.Find("PV Cell").GetComponent<Renderer>().material.color = new Color(multiplier+.1f, multiplier+.1f, multiplier+.1f);
 		GameObject.Find("BG").GetComponent<SpriteRenderer>().material.color = new Color(multiplier+.1f, multiplier+.1f, multiplier+.1f);
 		GameObject.Find ("Spotlight").GetComponent<Light> ().intensity = multiplier * 50;

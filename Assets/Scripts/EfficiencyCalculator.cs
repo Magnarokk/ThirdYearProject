@@ -41,7 +41,7 @@ public class EfficiencyCalculator : MonoBehaviour
 
 
 
-    /* LIGHT SOURCE SPECTRAL IRRADIANCE VALUES AND CORRECTIVE RATIOS */
+    /* LIGHT SOURCE SPECTRAL IRRADIANCE VALUES */
 
     //Spectral Irradiance in watts per meter squared per nanometer (50nm increments between values) ==> WILL BE VARIABLE WITH SLIDER
     private float[] AM1p5SI = { //300nm to 2500nm
