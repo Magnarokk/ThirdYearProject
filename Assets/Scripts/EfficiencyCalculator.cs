@@ -2,23 +2,29 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class EfficiencyCalculator : MonoBehaviour
 {
     [SerializeField]
-    private Text pOut;
+    private Text pOut, pIn, pEff, size;
+
     [SerializeField]
-    private Text pIn;
+    private GameObject lightSource, pvCell;
     [SerializeField]
-    private Text pEff;
+    private Slider intensitySlider, pvCellSlider;
+    [SerializeField]
+    private Sprite AM1p5Spr, IncandescentSpr, WarmLEDSpr, CoolLEDSpr, BroadbandFluoSpr, TribandFluoSpr, CoolWhiteFluoSpr;
+    [SerializeField]
+    private Material solexelMat, FirstSolarMat, FujikuraMat, AISTMat, HfGISEMat;
 
     [SerializeField]
     private Toggle graphView;
     [SerializeField]
     private Camera camera;
 
-    private int pvDDVal = 0;
-    private int lsDDVal = 0;
+    private int pvDDVal, lsDDVal = 0;
+    private float pvSlVal, lsSlVal = -1;
     private PVCellData selectedPVCell;
     private LightSourceData selectedLightSource;
 
@@ -28,13 +34,7 @@ public class EfficiencyCalculator : MonoBehaviour
     private int wavelengthDelta = 50;
 
     //in watts
-    private float totalPowerIn = 0;
-
-    //in watts
-    private float totalPowerOut = 0;
-
-    //in watts
-    private float power = 0;
+    private float totalPowerIn, totalPowerOut, power = 0;
 
     //in watts
     private List<float> sectionPower; //unused
@@ -194,6 +194,37 @@ public class EfficiencyCalculator : MonoBehaviour
 
 
 
+        /* GRAPH ARRAY CREATION */
+
+        int xAxisSize = 10;
+        int yAxisSize = 8;
+        float xAxisUnit, yAxisUnitEQE, yAxisUnitSI;
+        
+        //Find the biggest array between SI and EQE, use as baseline for x axis scale.
+        if (selectedLightSource.spectralIrradiance.Length < selectedPVCell.EQE.Length)
+            xAxisUnit = xAxisSize / selectedPVCell.EQE.Length;
+        else
+            xAxisUnit = xAxisSize / selectedLightSource.spectralIrradiance.Length;
+
+        //Find the biggest value in the SI array to set as maximum for its y axis
+        float max = selectedLightSource.spectralIrradiance[0];
+        for (int i = 1; i < selectedLightSource.spectralIrradiance.Length; i++)
+            if (selectedLightSource.spectralIrradiance[i] > max)
+                max = selectedLightSource.spectralIrradiance[i];
+
+        yAxisUnitEQE = yAxisSize / 100;
+        yAxisUnitSI = yAxisSize / max;
+
+
+        //DONE
+        //Divide set space by number of items
+        //set left scale from 0-100% for EQE
+        //set right scale from 0-highest value in SI array
+        //place EQE points at (x = currentWavelength, y = EQEVal), adjusted to scale
+        //place SI points at (x = currentWavelength, y = SIVal), adjusted to scale
+
+        GameObject test = (GameObject)Instantiate(Resources.Load("EffeciencyPointPrefab"));
+
         /* ASSIGNING EXTERNAL QUANTUM EFFICIENCY VALUES */
 
         solexel.AssignEQE(solexelEQE);
@@ -215,11 +246,42 @@ public class EfficiencyCalculator : MonoBehaviour
 
     void Update()
     {
+
+        /* SETS VIEW */
+
         Transform cameraTrans = camera.GetComponent<Transform>();
-        if (graphView.isOn && cameraTrans.position.x > -13.5f)
-            cameraTrans.position = new Vector3(-13.5f, 1, -10);
+        if (graphView.isOn && cameraTrans.position.x > -13.5f) { 
+            cameraTrans.position = new Vector3(-13.5f, 1, -22);
+            UpdateGraph(selectedLightSource, selectedPVCell);
+        }
         else if (!graphView.isOn && cameraTrans.position.x < 0)
             cameraTrans.position = new Vector3(0, 1, -10);
+
+
+
+        /* SLIDER CHANGE */
+        if (Input.GetMouseButtonUp(0))
+        {
+            intensitySlider.onValueChanged.AddListener(delegate
+            {
+                UpdateCalculator(selectedLightSource, selectedPVCell);
+                UpdateGraph(selectedLightSource, selectedPVCell);
+            });
+
+            pvCellSlider.onValueChanged.AddListener(delegate
+            {
+                Transform pvCellTrans = pvCell.GetComponent<Transform>();
+                pvCellTrans.localScale = new Vector3(
+                    4 * (pvCellSlider.normalizedValue / 1.2f) + 2f,
+                    .2f * (pvCellSlider.normalizedValue / 1.2f) + .1f,
+                    4 * (pvCellSlider.normalizedValue / 1.2f) + 2f
+                );
+                UpdateCalculator(selectedLightSource, selectedPVCell);
+                UpdateGraph(selectedLightSource, selectedPVCell);
+            });
+        }
+
+
 
         /* ON DROPDOWN CHANGE */
 
@@ -227,22 +289,30 @@ public class EfficiencyCalculator : MonoBehaviour
         {
             pvDDVal = pvCellDropdown.value;
 
+            Renderer pvCellRend = pvCell.GetComponent<Renderer>();
+
             switch (pvCellDropdown.captionText.text)
             {
                 case "Solexel":
                     selectedPVCell = solexel;
+                    pvCellRend.material = solexelMat;
+                    //pvCell.GetComponent<Renderer>().color = new Color(1, 1, 1);
                     break;
                 case "First Solar":
                     selectedPVCell = firstSolar;
+                    pvCellRend.material = FirstSolarMat;
                     break;
                 case "Fujikura":
                     selectedPVCell = fujikura;
+                    pvCellRend.material = FujikuraMat;
                     break;
                 case "AIST":
                     selectedPVCell = amorphAIST;
+                    pvCellRend.material = AISTMat;
                     break;
                 case "FhG-ISE":
                     selectedPVCell = fhgIseConcentr;
+                    pvCellRend.material = HfGISEMat;
                     break;
             }
             Debug.Log(selectedPVCell.name + " selected. Updating.");
@@ -255,28 +325,37 @@ public class EfficiencyCalculator : MonoBehaviour
         {
             lsDDVal = lightSourceDropdown.value;
 
+            SpriteRenderer lightSourceRend = lightSource.GetComponent<SpriteRenderer>();
+
             switch (lightSourceDropdown.captionText.text)
             {
                 case "AM 1.5":
                     selectedLightSource = AM1p5;
+                    lightSourceRend.sprite = AM1p5Spr;
                     break;
                 case "Incandescent":
                     selectedLightSource = blackBody;
+                    lightSourceRend.sprite = IncandescentSpr;
                     break;
                 case "Warm LED":
                     selectedLightSource = warmLED;
+                    lightSourceRend.sprite = WarmLEDSpr;
                     break;
                 case "Cool LED":
                     selectedLightSource = coolLED;
+                    lightSourceRend.sprite = CoolLEDSpr;
                     break;
-                case "Broadband":
+                case "Broadband Fluo":
                     selectedLightSource = broadBandFluo;
+                    lightSourceRend.sprite = BroadbandFluoSpr;
                     break;
-                case "Narrow Tri-Band":
+                case "Tri-Band Fluo":
                     selectedLightSource = narrowTriBandFluo;
+                    lightSourceRend.sprite = TribandFluoSpr;
                     break;
-                case "Cool White":
+                case "Cool White Fluo":
                     selectedLightSource = coolWhiteFluo;
+                    lightSourceRend.sprite = CoolWhiteFluoSpr;
                     break;
             }
             Debug.Log(selectedLightSource.name + " selected. Updating.");
@@ -287,7 +366,7 @@ public class EfficiencyCalculator : MonoBehaviour
 
     void UpdateCalculator(LightSourceData ls, PVCellData pv)
     {
-        /* CALCULATION OF SPLIT EFFICIENCIES */
+        /* CALCULATION OF SPLIT EFFICIENCIES AND TOTAL POWER*/
 
         float wavelength;
         totalPowerIn = 0;
@@ -310,19 +389,25 @@ public class EfficiencyCalculator : MonoBehaviour
                 totalPowerOut += ls.spectralIrradiance[i] * wavelengthDelta * pv.surfaceArea * pv.EQE[i] * pv.correctiveRatio; //add power out from interval to total power out
         }
 
-        pOut.text = ("Power Out:\n" + totalPowerOut + " Watts");
-        pIn.text = ("Power In:\n" + totalPowerIn + " Watts");
-        pEff.text = ("Efficiency:\n" + (100 * totalPowerOut / totalPowerIn) + "%");
+        float intensitySliderVal = intensitySlider.normalizedValue;
+        float pvCellSliderVal = pvCellSlider.normalizedValue;
 
-        Debug.Log("Total Power OUT = " + totalPowerOut);
-        Debug.Log("Total Power IN  = " + totalPowerIn);
-        Debug.Log("Efficiency = " + (100 * totalPowerOut / totalPowerIn) + "%");
+        size.text = ("Size:\n" + selectedPVCell.surfaceArea * pvCellSliderVal * 10000 + " cm²");
+        pOut.text = ("Power Out:\n" + totalPowerOut * intensitySliderVal * pvCellSliderVal + " Watts");
+        pIn.text = ("Power In:\n" + totalPowerIn * intensitySliderVal + " Watts");
+        pEff.text = ("Efficiency:\n" + 100 * totalPowerOut / totalPowerIn + " %");
+
+        Debug.Log("Size of Cell = " + selectedPVCell.surfaceArea * pvCellSliderVal * 10000 + " cm²");
+        Debug.Log("Total Power OUT = " + totalPowerOut * intensitySliderVal * pvCellSliderVal + " Watts");
+        Debug.Log("Total Power IN  = " + totalPowerIn * intensitySliderVal);
+        Debug.Log("Efficiency = " + 100 * totalPowerOut / totalPowerIn + " %");
     }
 
     void UpdateGraph(LightSourceData ls, PVCellData pv) {
+        if (graphView.isOn) {
 
+        }
     }
-
 }
 
 

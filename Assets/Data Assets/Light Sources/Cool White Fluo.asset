@@ -11,7 +11,7 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: Cool White Fluo
   m_EditorClassIdentifier: Assembly-CSharp::LightSourceData
-  name: White Fluorescent
+  name: Cool White Fluo
   correctiveRatio: 0
   spectralIrradiance:
   - 0
